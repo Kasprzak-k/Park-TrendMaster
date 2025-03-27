@@ -1,0 +1,82 @@
+//Arthur Kasprzak
+//@version=6
+indicator('Super Indicador PARK', overlay=true, max_lines_count=500, max_labels_count=500, max_bars_back=500)
+
+// ==============================
+// 1. PARÂMETROS CONFIGURÁVEIS
+// ==============================
+rsiLength = input.int(14, 'Período RSI', minval=1, group='Indicadores Osciladores')
+maFast = input.int(9, 'Média Móvel Rápida', group='Tendência', tooltip='Período para EMA curta')
+maSlow = input.int(21, 'Média Móvel Lenta', group='Tendência')
+atrLength = input.int(14, 'Período ATR', group='Volatilidade')
+supresLookback = input.int(50, 'Período S/R', group='Suporte/Resistência')
+
+// ==============================
+// 2. CÁLCULOS PRINCIPAIS
+// ==============================
+// 2.1 Dados Básicos
+price = close
+
+// 2.2 Médias Móveis
+emaFast = ta.ema(price, maFast)
+emaSlow = ta.ema(price, maSlow)
+maCross = ta.crossover(emaFast, emaSlow)
+maCrash = ta.crossunder(emaFast, emaSlow)
+
+// 2.3 Osciladores
+rsi = ta.rsi(price, rsiLength)
+[macdLine, signalLine, _] = ta.macd(price, 12, 26, 9)
+
+// 2.4 Volatilidade
+atr = ta.atr(atrLength)
+upperBand = close + (atr * 2)
+lowerBand = close - (atr * 2)
+
+// 2.5 Suporte/Resistência Dinâmico
+var float lastSupresHigh = na
+var float lastSupresLow = na
+
+if barstate.islastconfirmedhistory
+    lastSupresHigh := ta.highest(high, supresLookback)
+    lastSupresLow := ta.lowest(low, supresLookback)
+
+
+
+// ==============================
+// 3. PLOTAGEM GRÁFICA
+// ==============================
+// 3.1 Tendência
+plot(emaFast, 'EMA Rápida', color.new(#2962FF, 0), 2)
+plot(emaSlow, 'EMA Lenta', color.new(#FF6D00, 0), 2)
+
+// 3.2 Banda de Volatilidade
+upperBandPlot = plot(upperBand, 'Banda Superior', color.new(#2196F3, 90))
+lowerBandPlot = plot(lowerBand, 'Banda Inferior', color.new(#2196F3, 90))
+fill(upperBandPlot, lowerBandPlot, color.new(#2196F3, 90))
+
+// 3.3 Linhas de Suporte/Resistência (SOLUÇÃO PARA O PROBLEMA DO HLINE)
+var line resLine = line.new(na, na, na, na, color=color.new(color.red, 50), width=2)
+var line supLine = line.new(na, na, na, na, color=color.new(color.green, 50), width=2)
+
+if barstate.islastconfirmedhistory
+    line.set_xy1(resLine, bar_index - supresLookback, lastSupresHigh)
+    line.set_xy2(resLine, bar_index, lastSupresHigh)
+    line.set_xy1(supLine, bar_index - supresLookback, lastSupresLow)
+    line.set_xy2(supLine, bar_index, lastSupresLow)
+
+// 3.4 Histograma MACD
+plot(macdLine - signalLine, style=plot.style_columns, color=macdLine > signalLine ? color.green : color.red, title='MACD Histogram')
+
+// ==============================
+// 4. INTERFACE VISUAL
+// ==============================
+// 4.1 Labels Dinâmicos
+var label infoLabel = label.new(na, na, '', style=label.style_label_left, color=color.rgb(0, 0, 0, 70), textcolor=color.white)
+if barstate.islastconfirmedhistory
+    label.set_xy(infoLabel, bar_index, high)
+    label.set_text(infoLabel, str.format('Preço: {0,number,#.##}\nRSI: {1,number,#.##}\nATR: {2,number,#.##}', price, rsi, atr))
+
+// 4.2 Setas de Cruzamento
+plotshape(maCross, 'Cruzamento Altista', shape.triangleup, location.belowbar, color.green, size=size.small)
+plotshape(maCrash, 'Cruzamento Baixista', shape.triangledown, location.abovebar, color.red, size=size.small)
+
