@@ -1,47 +1,47 @@
+# PARK TrendMaster Pro
 
-Transforme sua análise técnica com o SMI-Pro – a evolução do PARK, agora especialmente otimizado para mini índices e operações intradiárias! 🚀 Um toolkit completo que combina tendência, volatilidade, volume e níveis dinâmicos em um visual intuitivo e poderoso.
+<img src="https://img.shields.io/badge/Version-3.0-blue" alt="Version">
+<img src="https://img.shields.io/badge/PineScript-v6-green" alt="PineScript">
 
-✨ RECURSOS INCRÍVEIS (TUDO QUE VOCÊ AMA, AGORA MELHOR!)
-🎯 TENDÊNCIA PRECISA
-Médias móveis exponenciais (9 e 21 períodos) destacam a direção do mercado.
+Advanced trend analysis indicator with smart adaptive profiles.
 
-Setas de cruzamento altista (🔼 verde) e baixista (🔻 vermelho) para pontos de virada.
+## ✨ Key Features
+- **3 Trading Profiles**  
+  `Aggressive` | `Default` | `Conservative`  
+  Auto-adjusts MA/RSI parameters
 
-📊 OSCILADORES INTEGRADOS
-RSI para identificar sobrecompra/sobrevenda.
+- **Smart Time Filter**  
+  Signals only at user-defined intervals (15/30/60min)
 
-Histograma MACD colorido para confirmar momentum.
+- **Professional Tools**  
+  - Dynamic Support/Resistance  
+  - Volume Zones  
+  - Gap Detection (10+ pts)  
 
-🌪️ BANDA DE VOLATILIDADE ATR
-Faixas dinâmicas baseadas no ATR (2x) para detectar rupturas ou reversões.
+## 📜 Changelog
+v3.0 (Current)
 
-🛡️ SUPORTE/RESISTÊNCIA DINÂMICO
-Linhas automáticas dos últimos 50 períodos (verde = suporte, vermelho = resistência).
+✅ Adaptive trading profiles
 
-📌 PAINEL INFORMATIVO
-Dados essenciais em tempo real: preço, RSI e ATR diretamente no gráfico!
+✅ Time-based signal filtering
 
-🔥 NOVIDADES EXCLUSIVAS (O QUE MUDOU NA v2.0?)
-🔎 DETECÇÃO DE GAPS
-Identifica gaps de abertura (configurável em pontos) e os marca com boxes coloridos (verde/vermelho).
+✅ Enhanced info panel
 
-🌐 MARCADORES DE SESSÃO
-Linhas verticais que separam sessões (ideal para operar abertura/fechamento).
+## 🛠 Integrated Professional Tools
 
-📊 ZONAS DE VOLUME ANORMAL
-Destaca barras com volume > 1.5x a média (ajustável).
+Dynamic Support/Resistance (50 periods)
 
-⚠️ ALERTAS AUTOMÁTICOS
-Notificações em tempo real para cruzamentos de médias (altista/baixista).
+High Volume Zones (1.5x above average)
 
-⚙️ CÓDIGO OTIMIZADO
-Suporte/resistência mais preciso | Lógica de gaps aperfeiçoada | Visual mais limpo.
+Gap Detection (minimum 10 points)
 
-🎨 VISUAL ELEGANTE & CUSTOMIZÁVEL
-Cores mais definidas (sem poluição visual).
+Real-time data dashboard
 
-Preenchimento suave nas bandas de ATR.
-
-Totalmente ajustável nos parâmetros para qualquer ativo ou estratégia.
-
-Pronto para dominar o mercado? Adicione agora e veja a diferença! 😍🔥
+##  Installation
+1. Open TradingView
+2. Copy/Paste script
+3. Configure:
+```pinescript
+// Customize in UI:
+signalConfig = input.string('Default', 'Trading Profile')
+signalTimeframe = input(30, 'Signal Window (mins)')
