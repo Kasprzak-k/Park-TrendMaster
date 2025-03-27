@@ -1,21 +1,44 @@
 //Arthur Kasprzak
 //@version=6
-indicator('Super Indicador PARK', overlay=true, max_lines_count=500, max_labels_count=500, max_bars_back=500)
+indicator('SuperIndicador Mini Índice Pro', 'SMI-Pro', overlay=true, max_lines_count=500, max_labels_count=500, max_bars_back=500)
 
 // ==============================
 // 1. PARÂMETROS CONFIGURÁVEIS
 // ==============================
-rsiLength = input.int(14, 'Período RSI', minval=1, group='Indicadores Osciladores')
-maFast = input.int(9, 'Média Móvel Rápida', group='Tendência', tooltip='Período para EMA curta')
+// --- Configurações Básicas ---
+rsiLength = input.int(14, 'Período RSI', group='Indicadores Osciladores')
+maFast = input.int(9, 'Média Móvel Rápida', group='Tendência')
 maSlow = input.int(21, 'Média Móvel Lenta', group='Tendência')
+
+// --- Gaps (Desativado por padrão) ---
+showGaps = input(false, 'Mostrar Gaps', group='Configurações de Gaps')
+minGapSize = input(5.0, 'Tamanho Mínimo do Gap (pontos)', group='Configurações de Gaps')
+
+// --- Novas Ferramentas Adicionadas ---
+showSessionMarks = input(false, 'Marcar Sessões', tooltip='Mostra linhas de abertura/fechamento de cada sessão', group='Ferramentas Adicionais')
+showVolumeZones = input(false, 'Zonas de Volume', tooltip='Destaca áreas com volume anormal', group='Ferramentas Adicionais')
+volumeThreshold = input(1.5, 'Limite Volume (x médio)', group='Ferramentas Adicionais')
+
+// --- Configurações Padrão ---
 atrLength = input.int(14, 'Período ATR', group='Volatilidade')
 supresLookback = input.int(50, 'Período S/R', group='Suporte/Resistência')
 
 // ==============================
 // 2. CÁLCULOS PRINCIPAIS
 // ==============================
-// 2.1 Dados Básicos
 price = close
+
+// 2.1 Detecção de Gaps (Corrigido)
+var float lastClose = na
+var bool gapUp = false
+var bool gapDown = false
+var float gapSize = 0.0
+
+if barstate.isrealtime or barstate.isconfirmed
+    lastClose := nz(close[1])
+    gapSize := math.abs(open - lastClose)
+    gapUp := open > lastClose and gapSize >= minGapSize
+    gapDown := open < lastClose and gapSize >= minGapSize
 
 // 2.2 Médias Móveis
 emaFast = ta.ema(price, maFast)
@@ -32,46 +55,59 @@ atr = ta.atr(atrLength)
 upperBand = close + (atr * 2)
 lowerBand = close - (atr * 2)
 
-// 2.5 Suporte/Resistência Dinâmico
-var float lastSupresHigh = na
-var float lastSupresLow = na
+// 2.5 Suporte/Resistência Dinâmico (Corrigido)
+supresHigh = ta.highest(high, supresLookback)
+supresLow = ta.lowest(low, supresLookback)
 
-if barstate.islastconfirmedhistory
-    lastSupresHigh := ta.highest(high, supresLookback)
-    lastSupresLow := ta.lowest(low, supresLookback)
-
-
+// 2.6 Novas Ferramentas
+var bool newSession = ta.change(time('D'))
+var float avgVolume = ta.sma(volume, 20)
+var bool highVolume = volume > avgVolume * volumeThreshold
 
 // ==============================
 // 3. PLOTAGEM GRÁFICA
 // ==============================
 // 3.1 Tendência
-plot(emaFast, 'EMA Rápida', color.new(#2962FF, 0), 2)
-plot(emaSlow, 'EMA Lenta', color.new(#FF6D00, 0), 2)
+plot(emaFast, 'EMA Rápida', #2962FF, 2)
+plot(emaSlow, 'EMA Lenta', #FF6D00, 2)
 
 // 3.2 Banda de Volatilidade
-upperBandPlot = plot(upperBand, 'Banda Superior', color.new(#2196F3, 90))
-lowerBandPlot = plot(lowerBand, 'Banda Inferior', color.new(#2196F3, 90))
+upperBandPlot = plot(upperBand, 'Banda Superior', #2196F3, 1)
+lowerBandPlot = plot(lowerBand, 'Banda Inferior', #2196F3, 1)
 fill(upperBandPlot, lowerBandPlot, color.new(#2196F3, 90))
 
-// 3.3 Linhas de Suporte/Resistência (SOLUÇÃO PARA O PROBLEMA DO HLINE)
+// 3.3 Linhas de Suporte/Resistência (Corrigido)
 var line resLine = line.new(na, na, na, na, color=color.new(color.red, 50), width=2)
 var line supLine = line.new(na, na, na, na, color=color.new(color.green, 50), width=2)
 
 if barstate.islastconfirmedhistory
-    line.set_xy1(resLine, bar_index - supresLookback, lastSupresHigh)
-    line.set_xy2(resLine, bar_index, lastSupresHigh)
-    line.set_xy1(supLine, bar_index - supresLookback, lastSupresLow)
-    line.set_xy2(supLine, bar_index, lastSupresLow)
+    line.set_xy1(resLine, bar_index[supresLookback], supresHigh)
+    line.set_xy2(resLine, bar_index, supresHigh)
+    line.set_xy1(supLine, bar_index[supresLookback], supresLow)
+    line.set_xy2(supLine, bar_index, supresLow)
 
-// 3.4 Histograma MACD
-plot(macdLine - signalLine, style=plot.style_columns, color=macdLine > signalLine ? color.green : color.red, title='MACD Histogram')
+// 3.4 Gaps (Corrigido)
+var box gapBox = na
+if showGaps and (gapUp or gapDown)
+    gapBox := box.new(bar_index-1, gapUp ? open : lastClose, bar_index, gapUp ? lastClose : open, 
+      bgcolor=color.new(gapUp ? color.green : color.red, 80), border_color=gapUp ? color.green : color.red)
+
+// 3.5 Marcadores de Sessão (Corrigido)
+var line sessionLine = na
+if showSessionMarks and newSession
+    sessionLine := line.new(bar_index, low * 0.995, bar_index, high * 1.005, color=color.new(color.white, 50))
+
+// 3.6 Zonas de Volume (Corrigido)
+bgcolor(showVolumeZones and highVolume ? color.new(color.purple, 90) : na, title="Alto Volume")
+
+// 3.7 Histograma MACD
+plot(macdLine - signalLine, style=plot.style_columns, color=macdLine > signalLine ? color.green : color.red)
 
 // ==============================
 // 4. INTERFACE VISUAL
 // ==============================
 // 4.1 Labels Dinâmicos
-var label infoLabel = label.new(na, na, '', style=label.style_label_left, color=color.rgb(0, 0, 0, 70), textcolor=color.white)
+var label infoLabel = label.new(na, na, '', style=label.style_label_left, color=#00000070, textcolor=color.white)
 if barstate.islastconfirmedhistory
     label.set_xy(infoLabel, bar_index, high)
     label.set_text(infoLabel, str.format('Preço: {0,number,#.##}\nRSI: {1,number,#.##}\nATR: {2,number,#.##}', price, rsi, atr))
@@ -80,3 +116,8 @@ if barstate.islastconfirmedhistory
 plotshape(maCross, 'Cruzamento Altista', shape.triangleup, location.belowbar, color.green, size=size.small)
 plotshape(maCrash, 'Cruzamento Baixista', shape.triangledown, location.abovebar, color.red, size=size.small)
 
+// ==============================
+// 5. ALERTAS
+// ==============================
+alertcondition(maCross, 'Cruzamento Altista Médias', alert.freq_once_per_bar_close)
+alertcondition(maCrash, 'Cruzamento Baixista Médias', alert.freq_once_per_bar_close)
